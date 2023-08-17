@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    {% if latest_question_list %}
+    <ul>
+      {% for question in latest_question_list %}
+      <p>Hello!</p>
+      <!-- <li><a href="/polls/{{question.id}}">{{question.question_text}}</a></li> -->
+      <!-- Since now I have defined the name in the urls.py file in polls folder, I can do below -->
+      <!-- below 'polls' come from the urls.py file (app_name variable) just so it won't bring a detail page from another app folder -->
+      <li>
+        <a href="{% url 'polls:detail' question.id %}"
+          >{{question.question_text}}</a
+        >
+      </li>
+      {%endfor%}
+    </ul>
+    {%else%}
+    <p>No Polls are available</p>
+    {%endif%}
+
+    
+  </body>
+</html>

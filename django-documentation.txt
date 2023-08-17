@@ -1,0 +1,705 @@
+you@yourmac ~ % ls .zshrc
+.zshrc
+TITLE: Django at a glance https://docs.djangoproject.com/en/4.2/intro/overview/
+Django comes with a object-relational mapper (A tool that links an object oriented language to a relational database)
+Python is an object oriented programming language.
+Almost everything in Python is an object, with its properties and methods.
+A Class is like an object constructor, or a "blueprint" for creating objects.
+
+All classes have a function called __init__(), which is always executed when the class is being initiated.
+Use the __init__() function to assign values to object properties, or other operations that are necessary to do when the object is being created:
+The __init__() function is called automatically every time the class is being used to create a new object.
+
+The __str__() function controls what should be returned when the class object is represented as a string.
+If the __str__() function is not set, the string representation of the object is returned:
+
+
+Designing your model:
+A Django model is the built-in feature that Django uses to create tables, their fields, and various constraints.
+A model is the single, definitive source of information about your data. It contains the essential fields and behaviors of the data you’re storing. Generally, each model maps to a single database table.
+Each attribute of model represents a database field (a set of values arranged in a table and has the same data type: column)
+
+-------- filename: mysite/news/models.py
+from django.db import models
+
+
+class Reporter(models.Model):
+    full_name = models.CharField(max_length=70)
+
+    def __str__(self):
+        return self.full_name
+
+
+class Article(models.Model):
+    pub_date = models.DateField()
+    headline = models.CharField(max_length=200)
+    content = models.TextField()
+    reporter = models.ForeignKey(Reporter, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.headline
+------
+
+Install it¶
+Next, run the Django command-line utilities to create the database tables automatically:
+
+/ 
+The makemigrations command looks at all your available models and creates migrations for whichever tables don’t already exist. 
+$ python manage.py makemigrations
+migrate runs the migrations and creates tables in your database, as well as optionally providing much richer schema control.
+$ python manage.py migrate
+
+------- URLS
+views are python callback functions
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("articles/<int:year>/", views.year_archive),
+    path("articles/<int:year>/<int:month>/", views.month_archive),
+    path("articles/<int:year>/<int:month>/<int:pk>/", views.article_detail),
+]
+
+The code above maps URL paths to Python callback functions (“views”). The path strings use parameter tags to “capture” values from the URLs. When a user requests a page, Django runs through each path, in order, and stops at the first one that matches the requested URL. (If none of them matches, Django calls a special-case 404 view.) This is blazingly fast, because the paths are compiled into regular expressions at load time.
+
+Once one of the URL patterns matches, Django calls the given view, which is a Python function. Each view gets passed a request object – which contains request metadata – and the values captured in the pattern.
+
+For example, if a user requested the URL “/articles/2005/05/39323/”, Django would call the function news.views.article_detail(request, year=2005, month=5, pk=39323).
+
+-----Views - mysite/news/views.py
+Each view is responsible for doing one of two things: Returning an HttpResponse object containing the content for the requested page, or raising an exception such as Http404. The rest is up to you.
+
+Generally, a view retrieves data according to the parameters, loads a template and renders the template with the retrieved data. Here’s an example view for year_archive from above:
+
+
+from django.shortcuts import render
+
+from .models import Article
+
+
+def year_archive(request, year):
+    a_list = Article.objects.filter(pub_date__year=year)
+    context = {"year": year, "article_list": a_list}
+    return render(request, "news/year_archive.html", context)
+
+Django uses request and response objects to pass state through the system.
+
+When a page is requested, Django creates an HttpRequest object that contains metadata about the request. Then Django loads the appropriate view, passing the HttpRequest as the first argument to the view function. Each view is responsible for returning an HttpResponse object.
+
+
+-----Templates - mysite/news/templates/news/year_archive.html¶
+{% extends "base.html" %}
+
+{% block title %}Articles for {{ year }}{% endblock %}
+
+{% block content %}
+<h1>Articles for {{ year }}</h1>
+
+{% for article in article_list %}
+    <p>{{ article.headline }}</p>
+    <p>By {{ article.reporter.full_name }}</p>
+    <p>Published {{ article.pub_date|date:"F j, Y" }}</p>
+{% endfor %}
+{% endblock %}
+
+
+***
+For production serve the static files properly yourself
+
+
+------
+finished the overview. Now Installation
+
+----Setting up database (POSTGRESQL)----
+installing psycopg
+sudo apt install python3-dev libpq-dev (not needed on windows)
+pip install psycopg2
+
+I could not do above two lines so I just did "pip install psycopg" and it worked like a charm! (version --3.1.9)
+
+I also did below because it told me java was not found even when I installed it
+brew install openjdk@11
+now I uninstalled it by typing "brew uninstall openjdk@11"
+then I removed java by typing:
+"sudo rm -fr /Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin
+sudo rm -fr /Library/PreferencePanes/JavaControlPanel.prefPane
+sudo rm -fr ~/Library/Application\ Support/Oracle/Java"
+I got the above code directly from java website and it worked
+
+I created a virtual environment:
+"python3 -m venv virtual_django_env"
+"source virtual_django_env/bin/activate"
+"deactive" # if you want to deactivate it
+
+
+Now let's actually create the project
+open your virtual environment
+
+Project: A Python package – i.e. a directory of code – that contains all the settings for an instance of Django. This would include database configuration, Django-specific options and application-specific settings.
+
+From the command line, cd into a directory where you’d like to store your code, then run the following command:
+
+in terminal type: "django-admin startproject mysite", you can type anything for mysite as name
+
+now you have:
+browndelta (you can change name later)
+    browndelta/ (you can change name later)
+        manage.py  - #manage.py: A command-line utility that lets you interact with this Django project in various ways. You can read all the details about manage.py in django-admin and manage.py.
+        browndelta/ - (actual python package for your project)
+            __init__.py (An empty file that tells Python that this directory should be considered a Python package. If you’re a Python beginner, read more about packages in the official Python docs.)
+            settings.py (Settings/configuration for this Django project. Django settings will tell you all about how settings work.)
+            urls.py (The URL declarations for this Django project; a “table of contents” of your Django-powered site. You can read more about URLs in URL dispatcher.)
+            asgi.py (An entry-point for ASGI-compatible web servers to serve your project. See How to deploy with ASGI for more details.)
+            wsgi.py (An entry-point for WSGI-compatible web servers to serve your project. See How to deploy with WSGI for more details.)
+
+
+now let's run the development server
+go to the browndelta folder (middle one) and run "python manage.py runserver"
+if you want to change the ip or port do below
+python manage.py runserver 8080
+python manage.py runserver 0.0.0.0:8000
+
+The development server automatically reloads Python code for each request as needed. You don’t need to restart the server for code changes to take effect. However, some actions like adding files don’t trigger a restart, so you’ll have to restart the server in these cases.
+
+Now we have a project and let's start creating the POLLS app
+
+Projects vs. apps
+What’s the difference between a project and an app? An app is a web application that does something – e.g., a blog system, a database of public records or a small poll app. A project is a collection of configuration and apps for a particular website. A project can contain multiple apps. An app can be in multiple projects.
+
+
+Your apps can live anywhere on your Python path. In this tutorial, we’ll create our poll app in the same directory as your manage.py file so that it can be imported as its own top-level module, rather than a submodule of mysite.
+
+To create your app, make sure you’re in the same directory as manage.py and type this command:
+"python manage.py startapp polls"
+
+now in the view file we put the below code
+--
+from django.http import HttpResponse
+
+def index(request):
+    return HttpResponse("Hello world. You are at the polls index.")
+--
+This is the simplest view possible in Django. To call the view, we need to map it to a URL - and for this we need a URLconf.
+
+To create a URLconf in the polls directory, create a file called urls.py. (we did not have it before in the polls but had it in the browndelta core folder) Your app directory should now look like:
+polls/
+    __init__.py
+    admin.py
+    apps.py
+    migrations/
+        __init__.py
+    models.py
+    tests.py
+    urls.py
+    views.py
+
+
+In the polls/urls.py file include the following code:
+--
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("", views.index, name="index"),
+]
+--
+The next step is to point the root URLconf at the polls.urls module. In browndelta/urls.py, add an import for django.urls.include and insert an include() in the urlpatterns list, so you have:
+
+--
+from django.contrib import admin
+from django.urls import include, path
+
+urlpatterns = [
+    path("polls/", include("polls.urls")),
+    path("admin/", admin.site.urls),
+]
+--
+
+The include() function allows referencing other URLconfs. Whenever Django encounters include(), it chops off whatever part of the URL matched up to that point and sends the remaining string to the included URLconf for further processing.
+The idea behind include() is to make it easy to plug-and-play URLs. Since polls are in their own URLconf (polls/urls.py), they can be placed under “/polls/”, or under “/fun_polls/”, or under “/content/polls/”, or any other path root, and the app will still work.
+
+When to use include()
+
+You should always use include() when you include other URL patterns. admin.site.urls is the only exception to this.
+
+You have now wired an index view into the URLconf. Verify it’s working with the following command:
+
+/ 
+$ python manage.py runserver
+Go to http://localhost:8000/polls/ in your browser, and you should see the text “Hello, world. You’re at the polls index.”, which you defined in the index view.
+
+The path() function is passed four arguments, two required: route and view, and two optional: kwargs, and name. At this point, it’s worth reviewing what these arguments are for.
+
+path() argument: route¶
+route is a string that contains a URL pattern. When processing a request, Django starts at the first pattern in urlpatterns and makes its way down the list, comparing the requested URL against each pattern until it finds one that matches.
+
+Patterns don’t search GET and POST parameters, or the domain name. For example, in a request to https://www.example.com/myapp/, the URLconf will look for myapp/. In a request to https://www.example.com/myapp/?page=3, the URLconf will also look for myapp/.
+
+path() argument: view¶
+When Django finds a matching pattern, it calls the specified view function with an HttpRequest object as the first argument and any “captured” values from the route as keyword arguments. We’ll give an example of this in a bit.
+
+path() argument: kwargs¶
+Arbitrary keyword arguments can be passed in a dictionary to the target view. We aren’t going to use this feature of Django in the tutorial.
+
+path() argument: name¶
+Naming your URL lets you refer to it unambiguously from elsewhere in Django, especially from within templates. This powerful feature allows you to make global changes to the URL patterns of your project while only touching a single file.
+
+When you’re comfortable with the basic request and response flow, read part 2 of this tutorial to start working with the database.
+
+PART 2:
+Now I need to set up my and hook up my Postgres 
+Database setup¶
+Now, open up mysite/settings.py. It’s a normal Python module with module-level variables representing Django settings.
+
+By default, the configuration uses SQLite. If you’re new to databases, or you’re just interested in trying Django, this is the easiest choice. SQLite is included in Python, so you won’t need to install anything else to support your database. When starting your first real project, however, you may want to use a more scalable database like PostgreSQL, to avoid database-switching headaches down the road.
+
+I now download postgres app from https://postgresapp.com/downloads.html PostgreSQL 15
+Insructions
+Installing Postgres.app
+Download   ➜   Move to Applications folder   ➜   Double Click
+
+If you don't move Postgres.app to the Applications folder, some features may not work (more info)
+
+Click "Initialize" to create a new server
+
+Configure your $PATH to use the included command line tools (optional):
+sudo mkdir -p /etc/paths.d &&
+echo /Applications/Postgres.app/Contents/Versions/latest/bin | sudo tee /etc/paths.d/postgresapp
+
+(I also ran the above command in the terminal)
+Done! You now have a PostgreSQL server running on your Mac with these default settings:
+
+Host	localhost
+Port	5432
+User	your system user name
+Database	same as user
+Password	none
+Connection URL	postgresql://localhost
+
+
+now go to your setting.py file and type below (change the existing database array)
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "firatprl",
+        "USER": "firatprl",
+        "PASSWORD": "",
+        "HOST": "", # an empty string means localhost
+        "PORT": "5432",
+    }
+}
+
+
+----
+Now your apps:
+Also, note the INSTALLED_APPS setting at the top of the file. That holds the names of all Django applications that are activated in this Django instance. Apps can be used in multiple projects, and you can package and distribute them for use by others in their projects.
+
+By default, INSTALLED_APPS contains the following apps, all of which come with Django:
+
+django.contrib.admin – The admin site. You’ll use it shortly.
+django.contrib.auth – An authentication system.
+django.contrib.contenttypes – A framework for content types.
+django.contrib.sessions – A session framework.
+django.contrib.messages – A messaging framework.
+django.contrib.staticfiles – A framework for managing static files.
+These applications are included by default as a convenience for the common case.
+
+Some of these applications make use of at least one database table, though, so we need to create the tables in the database before we can use them. To do that, run the following command:
+"python manage.py migrate"
+
+The migrate command looks at the INSTALLED_APPS setting and creates any necessary database tables according to the database settings in your mysite/settings.py file and the database migrations shipped with the app (we’ll cover those later). You’ll see a message for each migration it applies. If you’re interested, run the command-line client for your database and type \dt; (PostgreSQL), SHOW TABLES; (MariaDB, MySQL), .tables (SQLite), or SELECT TABLE_NAME FROM USER_TABLES; (Oracle) to display the tables Django created.
+
+For the minimalists:
+Like we said above, the default applications are included for the common case, but not everybody needs them. If you don’t need any or all of them, feel free to comment-out or delete the appropriate line(s) from INSTALLED_APPS before running migrate. The migrate command will only run migrations for apps in INSTALLED_APPS.
+
+
+left in here: https://docs.djangoproject.com/en/4.2/intro/tutorial02/#creating-models
+
+
+-----
+Now creating Models
+
+Now we’ll define your models – essentially, your database layout, with additional metadata.
+
+Philosophy
+
+A model is the single, definitive source of information about your data. It contains the essential fields and behaviors of the data you’re storing. Django follows the DRY Principle. The goal is to define your data model in one place and automatically derive things from it.
+
+This includes the migrations - unlike in Ruby On Rails, for example, migrations are entirely derived from your models file, and are essentially a history that Django can roll through to update your database schema to match your current models.
+
+The basics:
+
+Each model is a Python class that subclasses django.db.models.Model.
+Each attribute of the model represents a database field.
+With all of this, Django gives you an automatically-generated database-access API; see Making queries.
+
+Here, each model is represented by a class that subclasses django.db.models.Model. Each model has a number of class variables, each of which represents a database field in the model.
+
+Each field is represented by an instance of a Field class – e.g., CharField for character fields and DateTimeField for datetimes. This tells Django what type of data each field holds.
+The name of each Field instance (e.g. question_text or pub_date) is the field’s name, in machine-friendly format. You’ll use this value in your Python code, and your database will use it as the column name.
+
+Some Field classes have required arguments. CharField, for example, requires that you give it a max_length. That’s used not only in the database schema, but in validation, as we’ll soon see.
+
+A Field can also have various optional arguments; in this case, we’ve set the default value of votes to 0.
+
+Finally, note a relationship is defined, using ForeignKey. That tells Django each Choice is related to a single Question. Django supports all the common database relationships: many-to-one, many-to-many, and one-to-one.
+
+Activating models¶
+That small bit of model code gives Django a lot of information. With it, Django is able to:
+
+Create a database schema (CREATE TABLE statements) for this app.
+Create a Python database-access API for accessing Question and Choice objects.
+But first we need to tell our project that the polls app is installed.
+To include the app in our project, we need to add a reference to its configuration class in the INSTALLED_APPS setting. The PollsConfig class is in the polls/apps.py file, so its dotted path is 'polls.apps.PollsConfig'. Edit the mysite/settings.py file and add that dotted path to the INSTALLED_APPS setting. It’ll look like this:
+mysite/settings.py¶
+INSTALLED_APPS = [
+    "polls.apps.PollsConfig",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+]
+
+Now Django knows to include the polls app. Let’s run another command:
+now run "python manage.py makemigrations polls"
+
+
+By running makemigrations, you’re telling Django that you’ve made some changes to your models (in this case, you’ve made new ones) and that you’d like the changes to be stored as a migration.
+
+Migrations are how Django stores changes to your models (and thus your database schema) - they’re files on disk. You can read the migration for your new model if you like; it’s the file polls/migrations/0001_initial.py. Don’t worry, you’re not expected to read them every time Django makes one, but they’re designed to be human-editable in case you want to manually tweak how Django changes things.
+
+There’s a command that will run the migrations for you and manage your database schema automatically - that’s called migrate, and we’ll come to it in a moment - but first, let’s see what SQL that migration would run. The sqlmigrate command takes migration names and returns their SQL:
+
+/ 
+$ python manage.py sqlmigrate polls 0001
+
+
+The sqlmigrate command doesn’t actually run the migration on your database - instead, it prints it to the screen so that you can see what SQL Django thinks is required. It’s useful for checking what Django is going to do or if you have database administrators who require SQL scripts for changes.
+If you’re interested, you can also run python manage.py check; this checks for any problems in your project without making migrations or touching the database.
+
+Now, run migrate again to create those model tables in your database:
+
+/ 
+$ python manage.py migrate
+
+
+
+
+The migrate command takes all the migrations that haven’t been applied (Django tracks which ones are applied using a special table in your database called django_migrations) and runs them against your database - essentially, synchronizing the changes you made to your models with the schema in the database.
+
+Migrations are very powerful and let you change your models over time, as you develop your project, without the need to delete your database or tables and make new ones - it specializes in upgrading your database live, without losing data. We’ll cover them in more depth in a later part of the tutorial, but for now, remember the three-step guide to making model changes:
+
+Change your models (in models.py).
+Run python manage.py makemigrations to create migrations for those changes
+Run python manage.py migrate to apply those changes to the database.
+
+The reason that there are separate commands to make and apply migrations is because you’ll commit migrations to your version control system and ship them with your app; they not only make your development easier, they’re also usable by other developers and in production.
+
+-------------
+Playing with the API¶
+Now, let’s hop into the interactive Python shell and play around with the free API Django gives you. To invoke the Python shell, use this command:
+
+/ 
+$ python manage.py shell
+
+We’re using this (above) instead of simply typing “python”, because manage.py sets the DJANGO_SETTINGS_MODULE environment variable, which gives Django the Python import path to your mysite/settings.py file.
+
+---
+>>> from polls.models import Choice, Question  # Import the model classes we just wrote.
+
+# No questions are in the system yet.
+>>> Question.objects.all()
+<QuerySet []>
+
+# Create a new Question.
+# Support for time zones is enabled in the default settings file, so
+# Django expects a datetime with tzinfo for pub_date. Use timezone.now()
+# instead of datetime.datetime.now() and it will do the right thing.
+>>> from django.utils import timezone
+>>> q = Question(question_text="What's new?", pub_date=timezone.now())
+
+# Save the object into the database. You have to call save() explicitly.
+>>> q.save()
+
+# Now it has an ID.
+>>> q.id
+1
+
+# Access model field values via Python attributes.
+>>> q.question_text
+"What's new?"
+>>> q.pub_date
+datetime.datetime(2012, 2, 26, 13, 0, 0, 775217, tzinfo=datetime.timezone.utc)
+
+# Change values by changing the attributes, then calling save().
+>>> q.question_text = "What's up?"
+>>> q.save()
+
+# objects.all() displays all the questions in the database.
+>>> Question.objects.all()
+<QuerySet [<Question: Question object (1)>]>
+
+-----
+
+Wait a minute. <Question: Question object (1)> isn’t a helpful representation of this object. Let’s fix that by editing the Question model (in the polls/models.py file) and adding a __str__() method to both Question and Choice:
+It’s important to add __str__() methods to your models, not only for your own convenience when dealing with the interactive prompt, but also because objects’ representations are used throughout Django’s automatically-generated admin.
+
+
+Let’s also add a custom method to this model:
+---
+polls/models.py¶
+import datetime
+
+from django.db import models
+from django.utils import timezone
+
+
+class Question(models.Model):
+    # ...
+    def was_published_recently(self):
+        return self.pub_date >= timezone.now() - datetime.timedelta(days=1)
+
+
+---
+Note the addition of import datetime and from django.utils import timezone, to reference Python’s standard datetime module and Django’s time-zone-related utilities in django.utils.timezone, respectively. If you aren’t familiar with time zone handling in Python, you can learn more in the time zone support docs.
+
+Save these changes and start a new Python interactive shell by running python manage.py shell again:
+-----
+>>> from polls.models import Choice, Question
+
+# Make sure our __str__() addition worked.
+>>> Question.objects.all()
+<QuerySet [<Question: What's up?>]>
+
+# Django provides a rich database lookup API that's entirely driven by
+# keyword arguments.
+>>> Question.objects.filter(id=1)
+<QuerySet [<Question: What's up?>]>
+>>> Question.objects.filter(question_text__startswith="What")
+<QuerySet [<Question: What's up?>]>
+
+# Get the question that was published this year.
+>>> from django.utils import timezone
+>>> current_year = timezone.now().year
+>>> Question.objects.get(pub_date__year=current_year)
+<Question: What's up?>
+
+# Request an ID that doesn't exist, this will raise an exception.
+>>> Question.objects.get(id=2)
+Traceback (most recent call last):
+    ...
+DoesNotExist: Question matching query does not exist.
+
+# Lookup by a primary key is the most common case, so Django provides a
+# shortcut for primary-key exact lookups.
+# The following is identical to Question.objects.get(id=1).
+>>> Question.objects.get(pk=1)
+<Question: What's up?>
+
+# Make sure our custom method worked.
+>>> q = Question.objects.get(pk=1)
+>>> q.was_published_recently()
+True
+
+# Give the Question a couple of Choices. The create call constructs a new
+# Choice object, does the INSERT statement, adds the choice to the set
+# of available choices and returns the new Choice object. Django creates
+# a set to hold the "other side" of a ForeignKey relation
+# (e.g. a question's choice) which can be accessed via the API.
+>>> q = Question.objects.get(pk=1)
+
+# Display any choices from the related object set -- none so far.
+>>> q.choice_set.all()
+<QuerySet []>
+
+# Create three choices.
+>>> q.choice_set.create(choice_text="Not much", votes=0)
+<Choice: Not much>
+>>> q.choice_set.create(choice_text="The sky", votes=0)
+<Choice: The sky>
+>>> c = q.choice_set.create(choice_text="Just hacking again", votes=0)
+
+# Choice objects have API access to their related Question objects.
+>>> c.question
+<Question: What's up?>
+
+# And vice versa: Question objects get access to Choice objects.
+>>> q.choice_set.all()
+<QuerySet [<Choice: Not much>, <Choice: The sky>, <Choice: Just hacking again>]>
+>>> q.choice_set.count()
+3
+
+# The API automatically follows relationships as far as you need.
+# Use double underscores to separate relationships.
+# This works as many levels deep as you want; there's no limit.
+# Find all Choices for any question whose pub_date is in this year
+# (reusing the 'current_year' variable we created above).
+>>> Choice.objects.filter(question__pub_date__year=current_year)
+<QuerySet [<Choice: Not much>, <Choice: The sky>, <Choice: Just hacking again>]>
+
+# Let's delete one of the choices. Use delete() for that.
+>>> c = q.choice_set.filter(choice_text__startswith="Just hacking")
+>>> c.delete()
+--
+
+
+Creating an admin user¶
+First we’ll need to create a user who can login to the admin site. Run the following command:
+python manage.py createsuperuser
+Enter your desired username and press enter.
+
+Username: admin
+You will then be prompted for your desired email address:
+
+Email address: admin@example.com
+The final step is to enter your password. You will be asked to enter your password twice, the second time as a confirmation of the first.
+
+Password: firatprl
+Password (again): firatprl
+Superuser created successfully.
+
+now run the server and enter the admin panel with your credentials
+
+Make the poll app modifiable in the admin¶
+But where’s our poll app? It’s not displayed on the admin index page.
+
+Only one more thing to do: we need to tell the admin that Question objects have an admin interface. To do this, open the polls/admin.py file, and edit it to look like this:
+polls/admin.py¶
+---
+from django.contrib import admin
+
+from .models import Question
+
+admin.site.register(Question)
+--
+
+Now PART 3 of the tutorial: https://docs.djangoproject.com/en/4.2/intro/tutorial03/
+Now we will do views
+
+In our poll application, we’ll have the following four views:
+
+Question “index” page – displays the latest few questions.
+Question “detail” page – displays a question text, with no results but with a form to vote.
+Question “results” page – displays results for a particular question.
+Vote action – handles voting for a particular choice in a particular question.
+
+In Django, web pages and other content are delivered by views. Each view is represented by a Python function (or method, in the case of class-based views). Django will choose a view by examining the URL that’s requested (to be precise, the part of the URL after the domain name).
+
+Take a look in your browser, at “/polls/34/”. It’ll run the detail() method and display whatever ID you provide in the URL. Try “/polls/34/results/” and “/polls/34/vote/” too – these will display the placeholder results and voting pages.
+
+When somebody requests a page from your website – say, “/polls/34/”, Django will load the mysite.urls Python module because it’s pointed to by the ROOT_URLCONF setting. It finds the variable named urlpatterns and traverses the patterns in order. After finding the match at 'polls/', it strips off the matching text ("polls/") and sends the remaining text – "34/" – to the ‘polls.urls’ URLconf for further processing. There it matches '<int:question_id>/', resulting in a call to the detail() view like so:
+
+
+detail(request=<HttpRequest object>, question_id=34)
+The question_id=34 part comes from <int:question_id>. Using angle brackets “captures” part of the URL and sends it as a keyword argument to the view function. The question_id part of the string defines the name that will be used to identify the matched pattern, and the int part is a converter that determines what patterns should match this part of the URL path. The colon (:) separates the converter and pattern name.
+
+Write views that actually do something¶
+Each view is responsible for doing one of two things: returning an HttpResponse object containing the content for the requested page, or raising an exception such as Http404. The rest is up to you.
+
+Your view can read records from a database, or not. It can use a template system such as Django’s – or a third-party Python template system – or not. It can generate a PDF file, output XML, create a ZIP file on the fly, anything you want, using whatever Python libraries you want.
+
+All Django wants is that HttpResponse. Or an exception.
+
+Because it’s convenient, let’s use Django’s own database API, which we covered in Tutorial 2. Here’s one stab at a new index() view, which displays the latest 5 poll questions in the system, separated by commas, according to publication date:
+
+----
+polls/views.py¶
+from django.http import HttpResponse
+
+from .models import Question
+
+
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    output = ", ".join([q.question_text for q in latest_question_list])
+    return HttpResponse(output)
+
+
+# Leave the rest of the views (detail, results, vote) unchanged
+-----
+There’s a problem here, though: the page’s design is hard-coded in the view.
+If you want to change the way the page looks, you’ll have to edit this Python code.
+So let’s use Django’s template system to separate the design from Python by creating a template that the view can use.
+
+
+First, create a directory called templates in your polls directory. Django will look for templates in there.
+
+Your project’s TEMPLATES setting describes how Django will load and render templates. 
+The default settings file configures a DjangoTemplates backend whose APP_DIRS option is set to True. By convention DjangoTemplates looks for a “templates” subdirectory in each of the INSTALLED_APPS.
+
+Within the templates directory you have just created, create another directory called polls, 
+and within that create a file called index.html. In other words, your template should be at polls/templates/polls/index.html. 
+Because of how the app_directories template loader works as described above, you can refer to this template within Django as polls/index.html.
+
+Template namespacing
+
+Now we might be able to get away with putting our templates directly in polls/templates 
+(rather than creating another polls subdirectory), but it would actually be a bad idea. 
+Django will choose the first template it finds whose name matches, 
+and if you had a template with the same name in a different application, 
+Django would be unable to distinguish between them. We need to be able to point Django at the right one, 
+and the best way to ensure this is by namespacing them. That is, by putting those templates inside another 
+directory named for the application itself.
+
+
+Put the following code in that template:
+
+polls/templates/polls/index.html¶
+{% if latest_question_list %}
+    <ul>
+    {% for question in latest_question_list %}
+        <li><a href="/polls/{{ question.id }}/">{{ question.question_text }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}
+Note
+
+To make the tutorial shorter, all template examples use incomplete HTML. In your own projects you should use complete HTML documents.
+
+Now let’s update our index view in polls/views.py to use the template:
+
+polls/views.py¶
+from django.http import HttpResponse
+from django.template import loader
+
+from .models import Question
+
+
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    template = loader.get_template("polls/index.html")
+    context = {
+        "latest_question_list": latest_question_list,
+    }
+    return HttpResponse(template.render(context, request))
+That code loads the template called polls/index.html and passes it a context. The context is a dictionary mapping template variable names to Python objects.
+
+Load the page by pointing your browser at “/polls/”, and you should see a bulleted-list containing the “What’s up” question from Tutorial 2. The link points to the question’s detail page.
+
+A shortcut: render()¶
+It’s a very common idiom to load a template, fill a context and return an HttpResponse object with the result of the rendered template. Django provides a shortcut. Here’s the full index() view, rewritten:
+
+from django.shortcuts import render
+
+from .models import Question
+
+
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    context = {"latest_question_list": latest_question_list}
+    return render(request, "polls/index.html", context)
+
+The render() function takes the request object as its first argument, a template name as its second argument and a dictionary as its optional third argument. It returns an HttpResponse object of the given template rendered with the given context.
+
+
+--
+Namespacing URL names¶
+The tutorial project has just one app, polls. In real Django projects, there might be five, ten, twenty apps or more. How does Django differentiate the URL names between them? For example, the polls app has a detail view, and so might an app on the same project that is for a blog. How does one make it so that Django knows which app view to create for a url when using the {% url %} template tag?
+
+The answer is to add namespaces to your URLconf. In the polls/urls.py file, go ahead and add an app_name to set the application namespace:
